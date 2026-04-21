@@ -1,0 +1,98 @@
+#!/bin/bash
+
+cat << "EOF"
+
+                         ┌──────────────────────────┐
+                         │        USERS (DEMAND)     │
+                         │  - Post gigs              │
+                         │  - Buy tokens             │
+                         └────────────┬─────────────┘
+                                      │
+                                      ▼
+                      ┌────────────────────────────────┐
+                      │   MARKET / DEX (PRICE DISCOVERY)│
+                      │  - Buy/Sell Token               │
+                      │  - Liquidity Pool (Token/USDC)  │
+                      └────────────┬────────────────────┘
+                                   │
+                     buys tokens   │   sells tokens
+                                   ▼
+        ┌────────────────────────────────────────────────────┐
+        │              SMART CONTRACT (CORE LOGIC)            │
+        │----------------------------------------------------│
+        │ 1. Escrow funds (gig creation)                     │
+        │ 2. Lock worker stake                               │
+        │ 3. Release payment on completion                   │
+        │ 4. Burn % fees                                     │
+        │ 5. Dispute resolution (DAO voting)                 │
+        └────────────┬───────────────────────┬───────────────┘
+                     │                       │
+                     │                       │
+                     ▼                       ▼
+        ┌──────────────────────┐   ┌────────────────────────┐
+        │   REQUESTER (CLIENT) │   │   WORKER (COMPUTE NODE)│
+        │ - Posts task         │   │ - Completes gig         │
+        │ - Deposits tokens    │   │ - Stakes tokens         │
+        └──────────┬───────────┘   └──────────┬─────────────┘
+                   │                          │
+                   │                          │
+                   ▼                          ▼
+           ┌────────────────────────────────────────┐
+           │        GIG EXECUTION LAYER             │
+           │  - AI evaluates task value            │
+           │  - Work proof submitted               │
+           │  - Validation (auto + community)      │
+           └────────────┬──────────────────────────┘
+                        │
+                        ▼
+        ┌──────────────────────────────────────────────┐
+        │              TOKEN DISTRIBUTION              │
+        │---------------------------------------------│
+        │ Worker Reward        → +Tokens               │
+        │ Protocol Fee         → Treasury              │
+        │ Burn Mechanism       → ↓ Supply              │
+        │ Staking Lock         → ↓ Circulation         │
+        └────────────┬────────────────────────────────┘
+                     │
+                     ▼
+
+        ┌──────────────────────────────────────────────┐
+        │            SCARCITY ENGINE                   │
+        │---------------------------------------------│
+        │ ✔ Token Burning (fees, penalties)           │
+        │ ✔ Staking Locks (workers + validators)      │
+        │ ✔ Limited Emission (controlled minting)     │
+        │ ✔ Slashing (malicious behavior)             │
+        └────────────┬────────────────────────────────┘
+                     │
+                     ▼
+
+        ┌──────────────────────────────────────────────┐
+        │              TOKEN ECONOMY FLOW              │
+        │---------------------------------------------│
+        │ Users buy tokens → Demand ↑                 │
+        │ Workers earn tokens → Supply ↑              │
+        │ Burn + staking → Supply ↓                   │
+        │ Net effect → PRICE DISCOVERY                │
+        └────────────┬────────────────────────────────┘
+                     │
+                     ▼
+
+        ┌──────────────────────────────────────────────┐
+        │           VALUE FEEDBACK LOOP                │
+        │---------------------------------------------│
+        │ More gigs → More demand                     │
+        │ More demand → Higher price                  │
+        │ Higher price → More workers join            │
+        │ More workers → More supply (controlled)     │
+        │ Balanced by burn + staking                  │
+        └──────────────────────────────────────────────┘
+
+
+======================== KEY INSIGHT ========================
+
+        PRICE ≈ DEMAND / CIRCULATING SUPPLY
+
+============================================================
+
+EOF

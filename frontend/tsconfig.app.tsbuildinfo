@@ -1,0 +1,1 @@
+{"root":["./src/App.tsx","./src/main.tsx","./src/vite-env.d.ts","./src/components/CreateJob.tsx","./src/components/JobList.tsx","./src/components/ResultViewer.tsx","./src/components/Wallet.tsx","./src/hooks/useWallet.ts","./src/types/ethereum.ts","./src/web3/contract.ts"],"version":"5.9.3"}
