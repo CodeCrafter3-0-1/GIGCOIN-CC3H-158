@@ -1,0 +1,46 @@
+{
+  "_format": "hh3-sol-build-info-1",
+  "id": "solc-0_8_20-b18e9477ceda4c3f41f07140f78567a0ef28aefe",
+  "solcVersion": "0.8.20",
+  "solcLongVersion": "0.8.20+commit.a1b79de6",
+  "compilerType": "solc",
+  "userSourceNameMap": {
+    "src/JobEscrow.sol": "project/src/JobEscrow.sol",
+    "src/OracleAdapter.sol": "project/src/OracleAdapter.sol"
+  },
+  "input": {
+    "language": "Solidity",
+    "settings": {
+      "evmVersion": "shanghai",
+      "outputSelection": {
+        "*": {
+          "": [
+            "ast"
+          ],
+          "*": [
+            "abi",
+            "evm.bytecode.linkReferences",
+            "evm.bytecode.object",
+            "evm.bytecode.opcodes",
+            "evm.bytecode.sourceMap",
+            "evm.deployedBytecode.immutableReferences",
+            "evm.deployedBytecode.linkReferences",
+            "evm.deployedBytecode.object",
+            "evm.deployedBytecode.opcodes",
+            "evm.deployedBytecode.sourceMap",
+            "evm.methodIdentifiers"
+          ]
+        }
+      },
+      "remappings": []
+    },
+    "sources": {
+      "project/src/JobEscrow.sol": {
+        "content": "// SPDX-License-Identifier: MIT\npragma solidity ^0.8.20;\n\ninterface IERC20 {\n    function transferFrom(address from, address to, uint256 amount) external returns (bool);\n    function transfer(address to, uint256 amount) external returns (bool);\n    function mint(address to, uint256 amount) external returns (bool);\n}\n\ncontract JobEscrow {\n    IERC20 public token;\n    address public owner;\n    address public treasury;\n\n    uint256 public jobCounter;\n    uint256 public burnPercent = 2;\n    uint256 public validatorRewardPercent = 2;\n    uint256 public treasuryPercent = 1;\n    uint256 public workerCoinbaseReward = 10 ether;\n    uint256 public validatorCoinbaseReward = 2 ether;\n\n    enum JobState { CREATED, FUNDED, IN_PROGRESS, SUBMITTED, VALIDATING, VERIFIED, DISPUTED, RESOLVED, SETTLED }\n\n    struct Job {\n        address requester; address worker; uint256 usdPrice; uint256 tokenAmount;\n        bytes32 resultHash; string resultCID; address requesterPubKey; uint256 stakeAmount;\n        JobState state; uint256 createdAt; uint256 deadline;\n    }\n\n    struct Validation {\n        uint256 yesVotes; uint256 noVotes;\n        mapping(address => bool) voted; mapping(address => bool) voteChoice;\n        address[] validators;\n    }\n\n    mapping(uint256 => Job) public jobs;\n    mapping(uint256 => Validation) public validations;\n    mapping(address => uint256) public validatorStake;\n\n    event JobCreated(uint256 jobId, address requester);\n    event JobFunded(uint256 jobId, uint256 amount);\n    event JobAccepted(uint256 jobId, address worker);\n    event WorkSubmitted(uint256 jobId, string cid);\n    event VoteCast(uint256 jobId, address validator, bool choice);\n    event JobVerified(uint256 jobId);\n    event JobDisputed(uint256 jobId);\n    event JobFinalized(uint256 jobId);\n    event CoinbaseRewardMinted(uint256 jobId, address recipient, uint256 amount);\n\n    constructor(address _token, address _treasury) { token = IERC20(_token); owner = msg.sender; treasury = _treasury; }\n\n    modifier onlyOwner() { require(msg.sender == owner, \"Not owner\"); _; }\n    modifier inState(uint256 jobId, JobState state) { require(jobs[jobId].state == state, \"Invalid state\"); _; }\n\n    function stakeAsValidator(uint256 amount) external {\n        require(token.transferFrom(msg.sender, address(this), amount), \"Stake failed\");\n        validatorStake[msg.sender] += amount;\n    }\n\n    function createJob(uint256 usdPrice, address requesterPubKey, uint256 deadline) external returns (uint256) {\n        jobCounter++;\n        Job storage job = jobs[jobCounter];\n        job.requester = msg.sender; job.usdPrice = usdPrice; job.requesterPubKey = requesterPubKey;\n        job.state = JobState.CREATED; job.createdAt = block.timestamp; job.deadline = deadline;\n        emit JobCreated(jobCounter, msg.sender);\n        return jobCounter;\n    }\n\n    function fundJob(uint256 jobId, uint256 tokenAmount) external inState(jobId, JobState.CREATED) {\n        Job storage job = jobs[jobId];\n        require(msg.sender == job.requester, \"Not requester\");\n        require(token.transferFrom(msg.sender, address(this), tokenAmount), \"Transfer failed\");\n        job.tokenAmount = tokenAmount; job.state = JobState.FUNDED;\n        emit JobFunded(jobId, tokenAmount);\n    }\n\n    function acceptJob(uint256 jobId, uint256 stakeAmount) external inState(jobId, JobState.FUNDED) {\n        Job storage job = jobs[jobId];\n        require(job.worker == address(0), \"Already taken\");\n        require(token.transferFrom(msg.sender, address(this), stakeAmount), \"Stake failed\");\n        job.worker = msg.sender; job.stakeAmount = stakeAmount; job.state = JobState.IN_PROGRESS;\n        emit JobAccepted(jobId, msg.sender);\n    }\n\n    function submitWork(uint256 jobId, bytes32 resultHash, string calldata resultCID) external inState(jobId, JobState.IN_PROGRESS) {\n        Job storage job = jobs[jobId];\n        require(msg.sender == job.worker, \"Not worker\");\n        job.resultHash = resultHash; job.resultCID = resultCID; job.state = JobState.VALIDATING;\n        emit WorkSubmitted(jobId, resultCID);\n    }\n\n    function vote(uint256 jobId, bool isValid) external {\n        require(jobs[jobId].state == JobState.VALIDATING, \"Not validating\");\n        require(validatorStake[msg.sender] > 0, \"No stake\");\n        Validation storage v = validations[jobId];\n        require(!v.voted[msg.sender], \"Already voted\");\n        v.voted[msg.sender] = true; v.voteChoice[msg.sender] = isValid; v.validators.push(msg.sender);\n        if (isValid) v.yesVotes++; else v.noVotes++;\n        emit VoteCast(jobId, msg.sender, isValid);\n    }\n\n    function finalizeValidation(uint256 jobId) external {\n        Job storage job = jobs[jobId];\n        Validation storage v = validations[jobId];\n        require(job.state == JobState.VALIDATING, \"Not in validation\");\n        if (v.yesVotes > v.noVotes) {\n            job.state = JobState.VERIFIED; emit JobVerified(jobId);\n        } else {\n            job.state = JobState.DISPUTED; slashWorker(jobId); emit JobDisputed(jobId);\n        }\n    }\n\n    function slashWorker(uint256 jobId) internal {\n        token.transfer(address(0), jobs[jobId].stakeAmount);\n    }\n\n    function finalize(uint256 jobId) external inState(jobId, JobState.VERIFIED) {\n        Job storage job = jobs[jobId];\n        uint256 burnAmt = (job.tokenAmount * burnPercent) / 100;\n        uint256 valReward = (job.tokenAmount * validatorRewardPercent) / 100;\n        uint256 treasuryAmt = (job.tokenAmount * treasuryPercent) / 100;\n        uint256 workerPayout = job.tokenAmount - burnAmt - valReward - treasuryAmt;\n        token.transfer(address(0), burnAmt);\n        token.transfer(treasury, treasuryAmt);\n        require(token.transfer(job.worker, workerPayout), \"Payout failed\");\n        require(token.transfer(job.worker, job.stakeAmount), \"Stake failed\");\n        distributeValidatorRewards(jobId, valReward);\n        require(token.mint(job.worker, workerCoinbaseReward), \"Worker mint failed\");\n        emit CoinbaseRewardMinted(jobId, job.worker, workerCoinbaseReward);\n        job.state = JobState.SETTLED; emit JobFinalized(jobId);\n    }\n\n\n    function mockReward(uint256 amount) external {\n        require(token.mint(msg.sender, amount), \"Mint failed\");\n    }\n    function distributeValidatorRewards(uint256 jobId, uint256 totalReward) internal {\n        Validation storage v = validations[jobId];\n        uint256 totalVotes = v.yesVotes + v.noVotes;\n        if (totalVotes == 0) return;\n        uint256 rewardPerValidator = totalReward / totalVotes;\n        for (uint i = 0; i < v.validators.length; i++) {\n            address val = v.validators[i];\n            if (v.voteChoice[val]) {\n                token.transfer(val, rewardPerValidator);\n                require(token.mint(val, validatorCoinbaseReward), \"Validator mint failed\");\n                emit CoinbaseRewardMinted(jobId, val, validatorCoinbaseReward);\n            }\n        }\n    }\n}\n"
+      },
+      "project/src/OracleAdapter.sol": {
+        "content": ""
+      }
+    }
+  }
+}

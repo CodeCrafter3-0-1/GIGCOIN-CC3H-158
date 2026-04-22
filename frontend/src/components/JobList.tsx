@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import {
   fetchJob,
   formatJobState,
+  getJobMetadata,
   getContract,
   shortenAddress,
   toReadableContractError,
@@ -10,9 +11,19 @@ import {
 
 type JobListProps = {
   refreshKey: number;
+  mode?: "default" | "worker";
+  onSelectJob?: (job: JobDetails) => void;
+  selectedJobId?: number | null;
+  currentAccount?: string;
 };
 
-export default function JobList({ refreshKey }: JobListProps) {
+export default function JobList({
+  refreshKey,
+  mode = "default",
+  onSelectJob,
+  selectedJobId = null,
+  currentAccount = "",
+}: JobListProps) {
   const [jobs, setJobs] = useState<JobDetails[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -44,6 +55,26 @@ export default function JobList({ refreshKey }: JobListProps) {
     void loadJobs();
   }, [refreshKey]);
 
+  const getWorkerActionLabel = (job: JobDetails) => {
+    if (job.state === 1 && (!job.worker || job.worker === "0x0000000000000000000000000000000000000000")) {
+      return "Accept gig";
+    }
+
+    if (job.state === 2 && currentAccount && job.worker.toLowerCase() === currentAccount.toLowerCase()) {
+      return "Submit work";
+    }
+
+    if (job.state === 5 && currentAccount && job.worker.toLowerCase() === currentAccount.toLowerCase()) {
+      return "Claim reward";
+    }
+
+    if (job.state === 4) {
+      return "Vote / validate";
+    }
+
+    return "Open worker actions";
+  };
+
   return (
     <section className="panel">
       <div className="section-heading">
@@ -69,9 +100,14 @@ export default function JobList({ refreshKey }: JobListProps) {
               <div>
                 <p className="job-index">Job #{job.id}</p>
                 <h3>{formatJobState(job.state)}</h3>
+                {getJobMetadata(job.id)?.title ? <p className="job-brief-title">{getJobMetadata(job.id)?.title}</p> : null}
               </div>
-              <span className="status-pill">{job.tokenAmount} GIG locked</span>
+              <span className="status-pill">{job.tokenAmountFormatted} GIG locked</span>
             </div>
+
+            {getJobMetadata(job.id)?.description ? (
+              <p className="supporting-text compact">{getJobMetadata(job.id)?.description}</p>
+            ) : null}
 
             <dl className="job-meta">
               <div>
@@ -88,17 +124,29 @@ export default function JobList({ refreshKey }: JobListProps) {
               </div>
               <div>
                 <dt>Stake</dt>
-                <dd>{job.stakeAmount}</dd>
+                <dd>{job.stakeAmountFormatted} GIG</dd>
               </div>
               <div>
                 <dt>Deadline</dt>
-                <dd>{job.deadline}</dd>
+                <dd>{getJobMetadata(job.id)?.deadlineLabel || job.deadline}</dd>
               </div>
               <div>
                 <dt>Result CID</dt>
                 <dd>{job.resultCID || "Pending submission"}</dd>
               </div>
             </dl>
+
+            {mode === "worker" ? (
+              <div className="job-card-actions">
+                <button
+                  className={`primary-button ${selectedJobId === job.id ? "selected-action" : ""}`}
+                  type="button"
+                  onClick={() => onSelectJob?.(job)}
+                >
+                  {selectedJobId === job.id ? "Selected job" : getWorkerActionLabel(job)}
+                </button>
+              </div>
+            ) : null}
           </article>
         ))}
       </div>

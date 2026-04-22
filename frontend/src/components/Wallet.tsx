@@ -12,6 +12,8 @@ type WalletProps = {
   description?: string;
   networkLabel?: string;
   needsLocalNetwork?: boolean;
+  balanceLabel?: string;
+  balanceValue?: string;
 };
 
 export default function Wallet({
@@ -26,6 +28,8 @@ export default function Wallet({
   description = "Connect MetaMask to create jobs and inspect the live escrow state.",
   networkLabel = "Unknown network",
   needsLocalNetwork = false,
+  balanceLabel,
+  balanceValue,
 }: WalletProps) {
   return (
     <section className="panel">
@@ -54,6 +58,12 @@ export default function Wallet({
           <span className="detail-label">Wallet status</span>
           <strong>{account ? "Authenticated" : "Pending"}</strong>
         </div>
+        {balanceLabel && balanceValue ? (
+          <div className="auth-detail">
+            <span className="detail-label">{balanceLabel}</span>
+            <strong>{balanceValue}</strong>
+          </div>
+        ) : null}
       </div>
 
       <div className="actions">

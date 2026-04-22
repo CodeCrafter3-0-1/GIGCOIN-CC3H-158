@@ -39,7 +39,7 @@ export default function ResultViewer() {
   };
 
   return (
-    <section className="panel panel-wide">
+    <section className="panel panel-wide panel-fill">
       <div className="section-heading">
         <div>
           <p className="eyebrow">Private Results</p>

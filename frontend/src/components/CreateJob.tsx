@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { getContract } from "../web3/contract";
+import { createAndFundJob, saveJobMetadata } from "../web3/contract";
 
 type CreateJobProps = {
   account: string;
@@ -9,6 +9,8 @@ type CreateJobProps = {
 const DEFAULT_DEADLINE_OFFSET_SECONDS = 60 * 60 * 24;
 
 export default function CreateJob({ account, onCreated }: CreateJobProps) {
+  const [workTitle, setWorkTitle] = useState("");
+  const [workDescription, setWorkDescription] = useState("");
   const [usdPrice, setUsdPrice] = useState("100");
   const [requesterPubKey, setRequesterPubKey] = useState(account);
   const [deadline, setDeadline] = useState("");
@@ -32,16 +34,19 @@ export default function CreateJob({ account, onCreated }: CreateJobProps) {
     setStatus("");
 
     try {
-      const contract = await getContract();
-      const tx = await contract.createJob(
-        BigInt(usdPrice || "0"),
+      const result = await createAndFundJob(
+        usdPrice,
         requesterPubKey || account,
-        BigInt(resolvedDeadline),
+        resolvedDeadline,
       );
-
-      setStatus(`Transaction sent: ${tx.hash}`);
-      await tx.wait();
-      setStatus("Job created successfully.");
+      saveJobMetadata(result.jobId, {
+        title: workTitle.trim() || `Job #${result.jobId}`,
+        description: workDescription.trim() || "No job brief provided.",
+        deadlineLabel: deadline || new Date(resolvedDeadline * 1000).toISOString(),
+      });
+      setStatus(`Job #${result.jobId} created and funded. Create tx: ${result.createTxHash}`);
+      setWorkTitle("");
+      setWorkDescription("");
       await onCreated();
     } catch (err) {
       const message = err instanceof Error ? err.message : "Failed to create job.";
@@ -61,6 +66,24 @@ export default function CreateJob({ account, onCreated }: CreateJobProps) {
       </div>
 
       <div className="form-grid">
+        <label>
+          <span>Work title</span>
+          <input
+            value={workTitle}
+            onChange={(event) => setWorkTitle(event.target.value)}
+            placeholder="Summarize the requested work"
+          />
+        </label>
+
+        <label>
+          <span>Work description</span>
+          <input
+            value={workDescription}
+            onChange={(event) => setWorkDescription(event.target.value)}
+            placeholder="Describe the task, deliverables, and expectations"
+          />
+        </label>
+
         <label>
           <span>USD price</span>
           <input
@@ -92,10 +115,10 @@ export default function CreateJob({ account, onCreated }: CreateJobProps) {
 
       <div className="actions">
         <button className="primary-button" onClick={() => void createJob()} disabled={loading || !account}>
-          {loading ? "Creating..." : "Create Job"}
+          {loading ? "Creating..." : "Create + fund job"}
         </button>
         <span className="inline-note">
-          This writes directly to `JobEscrow.createJob(...)` with your connected wallet.
+          This creates the job, approves GIG, and funds escrow so workers can accept it immediately.
         </span>
       </div>
 

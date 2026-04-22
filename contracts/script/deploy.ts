@@ -88,6 +88,14 @@ async function main() {
     console.log("Worker token amount:", fundAmount.toString());
   }
 
+  
+  // Copy artifacts to frontend
+  const artifactsDir = resolve(import.meta.dirname, "..", "artifacts", "src", "JobEscrow.sol", "JobEscrow.json");
+  const frontendArtifactPath = resolve(import.meta.dirname, "..", "..", "frontend", "src", "web3", "JobEscrow.json");
+  const artifact = JSON.parse(readFileSync(artifactsDir, "utf8"));
+  writeFileSync(frontendArtifactPath, JSON.stringify(artifact, null, 2));
+  console.log("Copied latest artifact to frontend.");
+
   console.log("\n=== DEPLOYMENT COMPLETE ===");
   console.log("Token:", tokenAddress);
   console.log("Escrow:", escrowAddress);

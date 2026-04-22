@@ -50,29 +50,41 @@ button {
 
 .app-shell,
 .auth-shell {
-  width: min(1200px, calc(100% - 32px));
+  width: min(1180px, calc(100% - 40px));
   margin: 0 auto;
-  padding: 32px 0 48px;
+  padding: 28px 0 48px;
 }
 
 .auth-shell {
-  display: grid;
-  align-items: center;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
   min-height: 100vh;
 }
 
 .auth-card {
   display: grid;
-  gap: 24px;
+  gap: 20px;
+  width: min(1080px, 100%);
 }
 
 .auth-header,
 .page-header {
-  display: flex;
-  justify-content: space-between;
-  gap: 24px;
-  align-items: flex-start;
-  padding: 24px 0 8px;
+  display: grid;
+  gap: 12px;
+  align-items: start;
+  padding: 8px 0 4px;
+}
+
+.page-header {
+  grid-template-columns: minmax(0, 1fr) auto;
+  column-gap: 24px;
+  align-items: start;
+  padding: 0 0 8px;
+}
+
+.auth-header {
+  max-width: 760px;
 }
 
 .auth-header h1,
@@ -87,13 +99,25 @@ button {
 
 .auth-header h1,
 .page-header h1 {
-  font-size: clamp(2.3rem, 6vw, 4rem);
-  line-height: 0.95;
-  max-width: 11ch;
+  font-size: clamp(2.2rem, 4.5vw, 3.5rem);
+  line-height: 0.96;
+  max-width: 9ch;
+}
+
+.auth-header .supporting-text {
+  max-width: 62ch;
+  margin: 0;
 }
 
 .page-copy {
-  max-width: 64ch;
+  max-width: 52ch;
+  margin: 0;
+}
+
+.page-header > div {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
 }
 
 .eyebrow {
@@ -119,6 +143,9 @@ button {
   display: flex;
   align-items: center;
   gap: 12px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  align-self: end;
 }
 
 .role-grid,
@@ -131,6 +158,7 @@ button {
 
 .role-grid {
   grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: stretch;
 }
 
 .workspace-grid {
@@ -151,6 +179,48 @@ button {
   gap: 18px;
 }
 
+.dashboard-shell {
+  display: grid;
+  gap: 20px;
+}
+
+.dashboard-intro {
+  display: grid;
+  align-content: start;
+}
+
+.dashboard-columns {
+  display: grid;
+  grid-template-columns: minmax(320px, 410px) minmax(0, 1fr);
+  gap: 20px;
+  align-items: start;
+}
+
+.dashboard-sidebar,
+.dashboard-main,
+.dashboard-bottom-main,
+.dashboard-bottom-side {
+  min-width: 0;
+}
+
+.dashboard-main > .panel,
+.dashboard-sidebar > .panel,
+.dashboard-bottom-main > .panel,
+.dashboard-bottom-side > .panel {
+  height: 100%;
+}
+
+.dashboard-bottom {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(320px, 0.8fr);
+  gap: 20px;
+  align-items: stretch;
+}
+
+.dashboard-bottom-single {
+  grid-template-columns: 1fr;
+}
+
 .panel,
 .role-card {
   background: var(--surface);
@@ -161,10 +231,11 @@ button {
 
 .panel {
   padding: 24px;
+  min-width: 0;
 }
 
 .auth-panel {
-  max-width: 860px;
+  width: 100%;
 }
 
 .role-card {
@@ -172,6 +243,8 @@ button {
   text-align: left;
   display: grid;
   gap: 8px;
+  align-content: start;
+  min-height: 112px;
   transition: border-color 140ms ease, background 140ms ease, transform 140ms ease;
 }
 
@@ -202,6 +275,14 @@ button {
   justify-content: space-between;
   align-items: center;
   gap: 12px;
+}
+
+.section-heading {
+  margin-bottom: 16px;
+}
+
+.section-heading > div {
+  min-width: 0;
 }
 
 .tab-row {
@@ -340,8 +421,19 @@ button {
   background: var(--surface-muted);
 }
 
+.auth-detail strong,
+.metric-card strong {
+  display: block;
+  margin-top: 6px;
+  word-break: break-word;
+}
+
 .metric-grid {
   grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.stacked-metrics {
+  grid-template-columns: 1fr;
 }
 
 .operation-grid {
@@ -349,13 +441,17 @@ button {
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 16px;
   margin-top: 20px;
+  align-items: stretch;
 }
 
 .action-card {
+  display: flex;
+  flex-direction: column;
   padding: 18px;
   border: 1px solid var(--border);
   border-radius: 16px;
   background: var(--surface-muted);
+  min-height: 100%;
 }
 
 .action-card h3 {
@@ -365,6 +461,33 @@ button {
 
 .compact-form {
   margin-bottom: 0;
+}
+
+.actions {
+  flex-wrap: wrap;
+}
+
+.actions .inline-note {
+  flex: 1 1 240px;
+}
+
+.action-card .actions {
+  margin-top: auto;
+}
+
+.action-card .actions button {
+  flex: 1 1 160px;
+}
+
+.panel-fill {
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+}
+
+.panel-fill .result-block,
+.panel-fill .result-placeholder {
+  flex: 1 1 auto;
 }
 
 .market-metrics {
@@ -437,6 +560,14 @@ button {
   border: 1px solid var(--border);
 }
 
+.job-card-actions {
+  margin-top: 16px;
+}
+
+.selected-action {
+  opacity: 0.92;
+}
+
 .job-index {
   margin: 0 0 4px;
   color: var(--text-soft);
@@ -454,7 +585,31 @@ button {
   word-break: break-word;
 }
 
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(14, 22, 31, 0.32);
+  z-index: 40;
+}
+
+.worker-modal {
+  width: min(1100px, 100%);
+  max-height: 88vh;
+  overflow: auto;
+}
+
 @media (max-width: 980px) {
+  .page-header {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  .dashboard-columns,
+  .dashboard-bottom,
   .workspace-grid,
   .market-layout {
     grid-template-columns: 1fr;
@@ -480,8 +635,14 @@ button {
   .job-card-header,
   .actions,
   .quote-row {
-    flex-direction: column;
     align-items: flex-start;
+  }
+
+  .section-heading,
+  .job-card-header,
+  .actions,
+  .quote-row {
+    flex-direction: column;
   }
 
   .role-grid,
@@ -498,5 +659,14 @@ button {
   .role-card {
     padding: 18px;
     border-radius: 16px;
+  }
+
+  .page-header h1 {
+    font-size: clamp(2rem, 12vw, 3rem);
+    max-width: 8ch;
+  }
+
+  .modal-backdrop {
+    padding: 12px;
   }
 }

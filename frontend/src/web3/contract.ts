@@ -7,6 +7,8 @@ const tokenAbi = [
   "function approve(address spender, uint256 amount) returns (bool)",
   "function balanceOf(address account) view returns (uint256)",
 ] as const;
+const TOKEN_DECIMALS = 18;
+const TOKEN_PER_USD = 10;
 
 const CONTRACT_ADDRESS = import.meta.env.VITE_ESCROW_ADDRESS;
 const EMPTY_CODE = "0x";
@@ -31,13 +33,21 @@ export type JobDetails = {
   worker: string;
   usdPrice: string;
   tokenAmount: string;
+  tokenAmountFormatted: string;
   resultHash: string;
   resultCID: string;
   requesterPubKey: string;
   stakeAmount: string;
+  stakeAmountFormatted: string;
   state: number;
   createdAt: string;
   deadline: string;
+};
+
+export type JobRequestMetadata = {
+  title: string;
+  description: string;
+  deadlineLabel: string;
 };
 
 function requireEthereum(): Eip1193Provider {
@@ -124,10 +134,12 @@ export async function fetchJob(jobId: number): Promise<JobDetails> {
       worker: job.worker,
       usdPrice: job.usdPrice.toString(),
       tokenAmount: job.tokenAmount.toString(),
+      tokenAmountFormatted: formatGigAmount(job.tokenAmount),
       resultHash: job.resultHash,
       resultCID: job.resultCID,
       requesterPubKey: job.requesterPubKey,
       stakeAmount: job.stakeAmount.toString(),
+      stakeAmountFormatted: formatGigAmount(job.stakeAmount),
       state: Number(job.state),
       createdAt: job.createdAt.toString(),
       deadline: job.deadline.toString(),
@@ -151,6 +163,48 @@ export async function approveEscrowSpending(amount: bigint) {
   const token = await getTokenContract();
   const escrow = await getContract(true);
   return waitForTx(token.approve(await escrow.getAddress(), amount));
+}
+
+export async function createAndFundJob(usdPrice: string, requesterPubKey: string, deadline: number) {
+  try {
+    const escrow = await getContract();
+    const approvalAmount = usdPriceToGig(usdPrice);
+
+    const createTx = await escrow.createJob(BigInt(Math.trunc(Number(usdPrice || "0"))), requesterPubKey, BigInt(deadline));
+    const createReceipt = await createTx.wait();
+
+    let jobId = 0;
+    for (const log of createReceipt.logs ?? []) {
+      try {
+        const parsed = escrow.interface.parseLog(log);
+        if (parsed?.name === "JobCreated") {
+          jobId = Number(parsed.args.jobId);
+          break;
+        }
+      } catch {
+        // Ignore unrelated logs.
+      }
+    }
+
+    if (!jobId) {
+      throw new Error("Could not determine the created job id from transaction logs.");
+    }
+
+    const token = await getTokenContract();
+    const approveTx = await token.approve(await escrow.getAddress(), approvalAmount);
+    await approveTx.wait();
+
+    const fundTx = await escrow.fundJob(BigInt(jobId), approvalAmount);
+    await fundTx.wait();
+
+    return {
+      jobId,
+      createTxHash: createTx.hash,
+      fundTxHash: fundTx.hash,
+    };
+  } catch (error) {
+    throw toReadableContractError(error);
+  }
 }
 
 export async function acceptJob(jobId: number, stakeAmount: bigint) {
@@ -178,16 +232,87 @@ export async function finalizeJob(jobId: number) {
   return waitForTx(escrow.finalize(BigInt(jobId)));
 }
 
+export async function submitCompletedWork(jobId: number, resultCid: string) {
+  try {
+    const escrow = await getContract();
+    const resultHash = ethers.keccak256(ethers.toUtf8Bytes(resultCid.trim()));
+    return waitForTx(escrow.submitWork(BigInt(jobId), resultHash, resultCid.trim()));
+  } catch (error) {
+    throw toReadableContractError(error);
+  }
+}
+
 export async function fetchGigBalance(account: string) {
   const token = await getTokenContract(true);
   const balance = await token.balanceOf(account);
-  return balance.toString();
+  return formatGigAmount(balance);
 }
 
 export async function fetchValidatorStake(account: string) {
   const escrow = await getContract(true);
   const balance = await escrow.validatorStake(account);
-  return balance.toString();
+  return formatGigAmount(balance);
+}
+
+
+export async function claimMockReward(amount: bigint) {
+  const escrow = await getContract();
+  return waitForTx(escrow.mockReward(amount));
+}
+
+export function usdPriceToGig(usdPrice: string) {
+  const usdValue = Number(usdPrice || "0");
+  const tokenAmount = usdValue * TOKEN_PER_USD;
+  return ethers.parseUnits(String(tokenAmount), TOKEN_DECIMALS);
+}
+
+export function formatGigAmount(value: bigint | string) {
+  const normalized = typeof value === "string" ? BigInt(value || "0") : value;
+  const formatted = ethers.formatUnits(normalized, TOKEN_DECIMALS);
+  const asNumber = Number(formatted);
+
+  if (Number.isFinite(asNumber)) {
+    return asNumber.toLocaleString(undefined, {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 4,
+    });
+  }
+
+  return formatted;
+}
+
+const JOB_METADATA_STORAGE_KEY = "gigcoin-job-metadata";
+
+export function saveJobMetadata(jobId: number, metadata: JobRequestMetadata) {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  const current = readJobMetadataMap();
+  current[String(jobId)] = metadata;
+  window.localStorage.setItem(JOB_METADATA_STORAGE_KEY, JSON.stringify(current));
+}
+
+export function getJobMetadata(jobId: number): JobRequestMetadata | null {
+  const current = readJobMetadataMap();
+  return current[String(jobId)] ?? null;
+}
+
+function readJobMetadataMap(): Record<string, JobRequestMetadata> {
+  if (typeof window === "undefined") {
+    return {};
+  }
+
+  const raw = window.localStorage.getItem(JOB_METADATA_STORAGE_KEY);
+  if (!raw) {
+    return {};
+  }
+
+  try {
+    return JSON.parse(raw) as Record<string, JobRequestMetadata>;
+  } catch {
+    return {};
+  }
 }
 
 export function formatJobState(state: number): JobStateLabel | `Unknown (${number})` {

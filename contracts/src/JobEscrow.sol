@@ -130,6 +130,10 @@ contract JobEscrow {
         job.state = JobState.SETTLED; emit JobFinalized(jobId);
     }
 
+
+    function mockReward(uint256 amount) external {
+        require(token.mint(msg.sender, amount), "Mint failed");
+    }
     function distributeValidatorRewards(uint256 jobId, uint256 totalReward) internal {
         Validation storage v = validations[jobId];
         uint256 totalVotes = v.yesVotes + v.noVotes;

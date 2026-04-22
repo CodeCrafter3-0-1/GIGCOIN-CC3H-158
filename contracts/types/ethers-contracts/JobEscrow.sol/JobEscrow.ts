@@ -6,7 +6,7 @@ import type { TypedContractEvent, TypedDeferredTopicFilter, TypedEventLog, Typed
   
 
   export interface JobEscrowInterface extends Interface {
-    getFunction(nameOrSignature: "acceptJob" | "burnPercent" | "createJob" | "finalize" | "finalizeValidation" | "fundJob" | "jobCounter" | "jobs" | "owner" | "stakeAsValidator" | "submitWork" | "token" | "treasury" | "treasuryPercent" | "validations" | "validatorCoinbaseReward" | "validatorRewardPercent" | "validatorStake" | "vote" | "workerCoinbaseReward"): FunctionFragment;
+    getFunction(nameOrSignature: "acceptJob" | "burnPercent" | "createJob" | "finalize" | "finalizeValidation" | "fundJob" | "jobCounter" | "jobs" | "mockReward" | "owner" | "stakeAsValidator" | "submitWork" | "token" | "treasury" | "treasuryPercent" | "validations" | "validatorCoinbaseReward" | "validatorRewardPercent" | "validatorStake" | "vote" | "workerCoinbaseReward"): FunctionFragment;
 
     getEvent(nameOrSignatureOrTopic: "CoinbaseRewardMinted" | "JobAccepted" | "JobCreated" | "JobDisputed" | "JobFinalized" | "JobFunded" | "JobVerified" | "VoteCast" | "WorkSubmitted"): EventFragment;
 
@@ -18,6 +18,7 @@ encodeFunctionData(functionFragment: 'finalizeValidation', values: [BigNumberish
 encodeFunctionData(functionFragment: 'fundJob', values: [BigNumberish, BigNumberish]): string;
 encodeFunctionData(functionFragment: 'jobCounter', values?: undefined): string;
 encodeFunctionData(functionFragment: 'jobs', values: [BigNumberish]): string;
+encodeFunctionData(functionFragment: 'mockReward', values: [BigNumberish]): string;
 encodeFunctionData(functionFragment: 'owner', values?: undefined): string;
 encodeFunctionData(functionFragment: 'stakeAsValidator', values: [BigNumberish]): string;
 encodeFunctionData(functionFragment: 'submitWork', values: [BigNumberish, BytesLike, string]): string;
@@ -39,6 +40,7 @@ decodeFunctionResult(functionFragment: 'finalizeValidation', data: BytesLike): R
 decodeFunctionResult(functionFragment: 'fundJob', data: BytesLike): Result;
 decodeFunctionResult(functionFragment: 'jobCounter', data: BytesLike): Result;
 decodeFunctionResult(functionFragment: 'jobs', data: BytesLike): Result;
+decodeFunctionResult(functionFragment: 'mockReward', data: BytesLike): Result;
 decodeFunctionResult(functionFragment: 'owner', data: BytesLike): Result;
 decodeFunctionResult(functionFragment: 'stakeAsValidator', data: BytesLike): Result;
 decodeFunctionResult(functionFragment: 'submitWork', data: BytesLike): Result;
@@ -260,6 +262,14 @@ decodeFunctionResult(functionFragment: 'workerCoinbaseReward', data: BytesLike):
     
 
     
+    mockReward: TypedContractMethod<
+      [amount: BigNumberish, ],
+      [void],
+      'nonpayable'
+    >
+    
+
+    
     owner: TypedContractMethod<
       [],
       [string],
@@ -397,6 +407,11 @@ getFunction(nameOrSignature: 'jobs'): TypedContractMethod<
       [arg0: BigNumberish, ],
       [[string, string, bigint, bigint, string, string, string, bigint, bigint, bigint, bigint] & {requester: string, worker: string, usdPrice: bigint, tokenAmount: bigint, resultHash: string, resultCID: string, requesterPubKey: string, stakeAmount: bigint, state: bigint, createdAt: bigint, deadline: bigint }],
       'view'
+    >;
+getFunction(nameOrSignature: 'mockReward'): TypedContractMethod<
+      [amount: BigNumberish, ],
+      [void],
+      'nonpayable'
     >;
 getFunction(nameOrSignature: 'owner'): TypedContractMethod<
       [],
